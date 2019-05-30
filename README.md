@@ -1,5 +1,4 @@
-# elen1000_arduino_tutorials
-Miscellaneous Microcontroller Code
+# Miscellaneous Microcontroller Code
 
 This repository contains microcontroller code from a variety of units at Curtin University.
 The aim of this repo is to make it easier to share microcontroller programming techniques amongst students.
