@@ -35,13 +35,10 @@ void loop()
 
     while (true)
     {
-    /*
-    USER CODE: DO STUFF HERE
-    */
-	h = adc_read(15);
-	v = adc_read(14);
-	lmotor_val = (v + h - 1023)/10;
-	rmotor_val = -(v - h)/10;
+		h = adc_read(15);
+		v = adc_read(14);
+		lmotor_val = (v + h - 1023)/10.23;
+		rmotor_val = (h - v)/10.23;
 
     /*RECIEVE THE DATA*/
 	

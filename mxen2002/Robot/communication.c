@@ -32,19 +32,15 @@ void loop_comms()
 
     while (true)
     {
-    /*
-    USER CODE: DO STUFF HERE
-    */
-	//_delay_ms(5);
-	lmes = (lmes*4 + adc_read(1))/5;
-	rmes = (rmes*4 + adc_read(2))/5;
-	cmes = (cmes*4 + adc_read(0))/5;
-	ldist = (int)range(lmes);
-	rdist = (int)range(rmes);
-	cdist = (int)range(cmes);
-	currentMS = milliseconds;
+		lmes = (lmes*4 + adc_read(1))/5;
+		rmes = (rmes*4 + adc_read(2))/5;
+		cmes = (cmes*4 + adc_read(0))/5;
+		ldist = (int)range(lmes);
+		rdist = (int)range(rmes);
+		cdist = (int)range(cmes);
+		currentMS = milliseconds;
 
-    /*RECIEVE THE DATA*/
+    	/*RECIEVE THE DATA*/
         while (UCSR2A&(1<<RXC2)) {
 			unsigned char serial_byte_in = UDR2;
 			if (serial_byte_in == 0xFF && control == 0) {
@@ -73,7 +69,7 @@ void loop_comms()
 					directedMS = currentMS;
 				} else if (id_r == SERVO)
 				{
-					move_velocity_servo(-(recieved-512)*0.4 + 512);
+					move_velocity_servo(-(recieved-512) + 512);
 				}
                 /*END USER CODE*/
 				control = 0;
@@ -112,7 +108,6 @@ void loop_comms()
             }
 		}
 		
-		/*AUTOBOTS ROLL OUT*/
 		if (!autonomous && currentMS - directedMS < 350)
 		{
 			control_left_motor(lm);
@@ -147,39 +142,6 @@ void loop_comms()
 					control_right_motor(50 - (clamp(rdist, 50, 170) - 110)/2);
 				}
 			}
-			/*
-			if (cdist < 80)
-			{
-				//turn
-				if (ldist > rdist)
-				{
-					//turn left, follow right wall
-					following_left = false;
-					turnMS = currentMS;
-					control_left_motor(100);
-					control_right_motor(-100);
-					//while (currentMS - turnMS < 50 ) {}
-					//control_left_motor(0);
-				} else {
-					//turn right, follow left wall
-					following_left = true;
-					turnMS = currentMS;
-					control_right_motor(100);
-					control_left_motor(-100);
-					//while (currentMS - turnMS < 50 ) {}
-					//control_right_motor(0);
-				}
-			} else {
-				//follow a wall
-				if (following_left)
-				{
-					control_left_motor(50 + clamp(ldist, 40, 160)*5/6);
-					control_right_motor(50 - clamp(ldist, 40, 160)*5/6);
-				} else {
-					control_left_motor(50 - clamp(rdist, 40, 160)*5/6);
-					control_right_motor(50 + clamp(rdist, 40, 160)*5/6);
-				}
-			}*/
 		}
     }
 }
@@ -218,7 +180,7 @@ void control_right_motor(int n) {
 		PORTA &= ~(1<<PA3);
 		PORTA |= (1<<PA2);
 	}
-	OCR1A = abs(n);
+	OCR1A = 1.04 * abs(n);
 }
 
 //n is an integer from -100 -> 100
@@ -233,7 +195,7 @@ void control_left_motor(int n) {
 		PORTA &= ~(1<<PA0);
 		PORTA |= (1<<PA1);
 	}
-	OCR1B = abs(n);
+	OCR1B = 1.04 * abs(n);
 }
 
 void servo_init() {
@@ -243,22 +205,18 @@ void servo_init() {
 	TCCR3B |= (1<<WGM33);
 	//Compare mode 1 0 (Duty cycle = comp/top)
 	TCCR3A |= (1 << COM3A1) | (1 << COM3B1);//CLR ON UP, SET ON DOWN
-	//Set prescaler to 256
-	TCCR3B |= (1 << CS32); //| (1 << CS10);
+	//Set prescaler to 8
+	TCCR3B |= (1 << CS31);
 	//set TOP value
-	ICR3 = 625;
+	ICR3 = 20000;
 	
-	//set compare values for both pins
-	//OCR1A = 6;
-	//OCR1B = 6;
-	
-	//set PWN pins to output
+	//set PWM pins to output
 	DDRE |= (1 << PE3);
 }
 
 void move_velocity_servo(long n) {
 	//Position with horizontal joystick 1
-	OCR3A = n/146 + 43;
+	OCR3A = n/4.55 + 1487;
 }
 
 int clamp(int x, int min, int max)
