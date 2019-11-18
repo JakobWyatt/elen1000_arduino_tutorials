@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include "SparkFun_BNO080_Arduino_Library.h"
 
+#define DEBUG
+
 //create IMU
 BNO080 myIMU;
 const int chipSelect = 53;
@@ -18,39 +20,17 @@ Euler eul;
 
 void setup()
 {
+  #ifdef DEBUG
   Serial.begin(9600);
+  #endif
  
   Wire.begin();
   Wire.setClock(400000); //Increase I2C data rate to 400kHz
   myIMU.begin(); //attach IMU
   myIMU.enableRotationVector(10); //Send data update every 10ms
   myIMU.enableAccelerometer(10);
-  //myIMU.enableGyro(10); Gyro makes the rotation vector update VERY SLOWLY
-
-  //Set up SD card
-  Serial.print("Initializing SD card...");
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-    while (1);
-  }
-  Serial.println("card initialized.");
-
-  //Find file to use
-  int counter = 1;
-  while (SD.exists(String(counter) + ".csv")) {
-    ++counter;
-  }
-  fileName = String(counter) + ".csv";
-  Serial.println("Writing to file: " + fileName);
-
-  //Write file header
-  File dataFile = SD.open(fileName, FILE_WRITE);
-  if (!dataFile) {
-    Serial.println("error opening file");
-  } else {
-    dataFile.println("Time (ms),yaw (degrees),pitch (degrees),roll (degrees),accel X (m/s^2),accel Y (m/s^2),accel Z (m/s^2)");
-    dataFile.close();
+  while (!initSDCard()) {
+    delay(1000);
   }
 }
 
@@ -65,7 +45,6 @@ void loop()
     myQuat.j = myIMU.getQuatJ();
     myQuat.k = myIMU.getQuatK();
     myQuat.real = myIMU.getQuatReal();
-    float quatRadianAccuracy = myIMU.getQuatRadianAccuracy();
     eul = getAngles(myQuat);
 
     float aX = myIMU.getAccelX();
@@ -87,11 +66,14 @@ void loop()
     dataString += ",";
     dataString += String(aZ);
 
-    Serial.println(dataString);
+    log(dataString);
 
     File dataFile = SD.open(fileName, FILE_WRITE);
     if (!dataFile) {
-      Serial.println("error opening file");
+      log("error opening file");
+      while (!initSDCard()) {
+        delay(1000);
+      }
     } else {
       dataFile.println(dataString);
       dataFile.close();
@@ -120,4 +102,40 @@ Euler getAngles(Quat q){
   ret_val.roll = degrees(atan2(y , x));
 
   return ret_val;
+}
+
+bool initSDCard() {
+  //Set up SD card
+  log("Initializing SD card...");
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect)) {
+    log("Card failed, or not present");
+    return false;
+  }
+  log("card initialized.");
+
+  //Find file to use
+  int counter = 1;
+  while (SD.exists(String(counter) + ".csv")) {
+    ++counter;
+  }
+  fileName = String(counter) + ".csv";
+  log("Writing to file: " + fileName);
+
+  //Write file header
+  File dataFile = SD.open(fileName, FILE_WRITE);
+  if (!dataFile) {
+    log("error opening file");
+    return false;
+  }
+  dataFile.println("Time (ms),yaw (degrees),pitch (degrees),roll (degrees),accel X (m/s^2),accel Y (m/s^2),accel Z (m/s^2)");
+  dataFile.close();
+
+  return true;
+}
+
+void log(String s) {
+  #ifdef DEBUG
+  Serial.println(s);
+  #endif
 }
