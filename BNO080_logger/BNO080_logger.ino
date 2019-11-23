@@ -4,8 +4,6 @@
 #include <Wire.h>
 #include "SparkFun_BNO080_Arduino_Library.h"
 
-#define DEBUG
-
 //create IMU
 BNO080 myIMU;
 const int chipSelect = 53;
@@ -46,10 +44,12 @@ void loop()
     myQuat.k = myIMU.getQuatK();
     myQuat.real = myIMU.getQuatReal();
     eul = getAngles(myQuat);
+    byte quatAccuracy = myIMU.getQuatAccuracy();
 
     float aX = myIMU.getAccelX();
     float aY = myIMU.getAccelY();
     float aZ = myIMU.getAccelZ();
+    byte accelAccuracy = myIMU.getAccelAccuracy();
     
     String dataString = "";
     dataString += String(millis());
@@ -65,7 +65,10 @@ void loop()
     dataString += String(aY);
     dataString += ",";
     dataString += String(aZ);
-
+    dataString += ",";
+    dataString += printAccuracyLevel(accelAccuracy);
+    dataString += ",";
+    dataString += printAccuracyLevel(quatAccuracy);
     log(dataString);
 
     File dataFile = SD.open(fileName, FILE_WRITE);
@@ -128,7 +131,7 @@ bool initSDCard() {
     log("error opening file");
     return false;
   }
-  dataFile.println("Time (ms),yaw (degrees),pitch (degrees),roll (degrees),accel X (m/s^2),accel Y (m/s^2),accel Z (m/s^2)");
+  dataFile.println("Time (ms),yaw (degrees),pitch (degrees),roll (degrees),accel X (m/s^2),accel Y (m/s^2),accel Z (m/s^2),accelAccuracy,rotAccuracy");
   dataFile.close();
 
   return true;
@@ -138,4 +141,13 @@ void log(String s) {
   #ifdef DEBUG
   Serial.println(s);
   #endif
+}
+
+//Given a accuracy number, print what it means
+String printAccuracyLevel(byte accuracyNumber)
+{
+  if (accuracyNumber == 0) return "Unreliable";
+  else if (accuracyNumber == 1) return "Low";
+  else if (accuracyNumber == 2) return "Medium";
+  else if (accuracyNumber == 3) return "High";
 }
